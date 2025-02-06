@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import ChatInput from '@/components/ChatInput';
 import ActionButtons from '@/components/ActionButtons';
 import MessageList from '@/components/MessageList';
+import { sendMessageToOpenAI } from '@/services/openai';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -15,11 +17,11 @@ const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const { toast: useToaster } = useToast();
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
-      toast({
+      useToaster({
         title: "Error",
         description: "Please enter a message",
         variant: "destructive"
@@ -37,21 +39,16 @@ const Index = () => {
       
       setMessages(newMessages);
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const assistantResponse = await sendMessageToOpenAI(newMessages);
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: "I am a hardcoded response. The database connection has been removed for testing purposes. You can modify this response in the Index.tsx file."
+        content: assistantResponse
       };
 
       setMessages([...newMessages, assistantMessage]);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +59,7 @@ const Index = () => {
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        onApiKeyChange={() => {}} // Empty function since we don't need API key anymore
+        onApiKeyChange={() => {}} 
       />
       
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>

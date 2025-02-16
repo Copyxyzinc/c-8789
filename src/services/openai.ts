@@ -7,11 +7,14 @@ const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'; content: string }[]) => {
   try {
     // Get the OpenAI API key from Supabase
-    const { data: { secret: openAIKey }, error: secretError } = await supabase
-      .rpc('get_secret', { secret_name: 'OPENAI_API_KEY' });
+    const { data, error } = await supabase
+      .from('secrets')
+      .select('value')
+      .eq('name', 'OPENAI_API_KEY')
+      .single();
 
-    if (secretError || !openAIKey) {
-      console.error("Error getting OpenAI API key:", secretError);
+    if (error || !data?.value) {
+      console.error("Error getting OpenAI API key:", error);
       throw new Error("Failed to get OpenAI API key");
     }
 
@@ -19,10 +22,10 @@ export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openAIKey}`,
+        Authorization: `Bearer ${data.value}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // Using the recommended model
+        model: "gpt-4",
         messages: messages,
         temperature: 0.7,
         max_tokens: 1000,
@@ -35,8 +38,8 @@ export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'
       throw new Error(errorData.error?.message || "Failed to get response from OpenAI");
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content;
+    const responseData = await response.json();
+    return responseData.choices[0].message.content;
   } catch (error: any) {
     console.error("Error calling OpenAI:", error);
     toast.error(error.message || "Failed to get response from ChatGPT");

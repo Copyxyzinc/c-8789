@@ -8,10 +8,10 @@ export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'
   try {
     // Get the OpenAI API key from Supabase
     const { data: secretsData } = await supabase
-      .from('chat_messages')  // Using an existing table for secrets storage
+      .from('chat_messages')
       .select('content')
       .eq('role', 'system')
-      .eq('user_id', 'OPENAI_API_KEY')
+      .eq('content', 'OPENAI_API_KEY')
       .single();
 
     const apiKey = secretsData?.content;
@@ -49,3 +49,4 @@ export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'
     throw error;
   }
 };
+

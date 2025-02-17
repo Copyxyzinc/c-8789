@@ -11,7 +11,6 @@ export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'
       .from('chat_messages')
       .select('content')
       .eq('role', 'system')
-      .eq('content', 'OPENAI_API_KEY')
       .single();
 
     const apiKey = secretsData?.content;
@@ -49,4 +48,3 @@ export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'
     throw error;
   }
 };
-

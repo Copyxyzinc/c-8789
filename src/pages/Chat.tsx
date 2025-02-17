@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import ChatHeader from '@/components/ChatHeader';
 import ChatInput from '@/components/ChatInput';
 import MessageList from '@/components/MessageList';
+import ActionButtons from '@/components/ActionButtons';
 import { sendMessageToOpenAI } from '@/services/openai';
 
 type Message = {
@@ -53,7 +54,14 @@ const Chat = () => {
       <ChatHeader />
       <div className="flex-1 relative">
         <div className="absolute inset-0 flex flex-col">
-          <MessageList messages={messages} />
+          {messages.length === 0 ? (
+            <div className="flex-1 flex flex-col justify-center items-center">
+              <h1 className="text-3xl font-semibold mb-8">How can I help you today?</h1>
+              <ActionButtons />
+            </div>
+          ) : (
+            <MessageList messages={messages} />
+          )}
           <div className="w-full max-w-3xl mx-auto px-4 py-2">
             <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
           </div>

@@ -7,14 +7,17 @@ const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'; content: string }[]) => {
   try {
     // Get the OpenAI API key from Supabase
-    const { data, error } = await supabase
-      .from('secrets')
-      .select('value')
-      .eq('name', 'OPENAI_API_KEY')
+    const { data: secretsData } = await supabase
+      .from('chat_messages')  // Using an existing table for secrets storage
+      .select('content')
+      .eq('role', 'system')
+      .eq('user_id', 'OPENAI_API_KEY')
       .single();
 
-    if (error || !data?.value) {
-      console.error("Error getting OpenAI API key:", error);
+    const apiKey = secretsData?.content;
+
+    if (!apiKey) {
+      console.error("Error: OpenAI API key not found");
       throw new Error("Failed to get OpenAI API key");
     }
 
@@ -22,7 +25,7 @@ export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${data.value}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-4",

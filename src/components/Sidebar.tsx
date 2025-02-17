@@ -1,10 +1,11 @@
 
-import { Menu, Globe, ChevronDown, Key, Clock, Calendar, Plus, Settings, MessageSquare } from "lucide-react";
+import { Menu, Globe, ChevronDown, Key, Clock, Calendar, Plus, Settings, MessageSquare, Search, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,28 +21,34 @@ interface TimeframeProps {
 
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
   const [apiKey, setApiKey] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favorites, setFavorites] = useState([
+    "AI Development Guide",
+    "Project Architecture",
+    "Best Practices"
+  ]);
   const [expandedTimeframes, setExpandedTimeframes] = useState<Record<string, boolean>>({
     "Favorites": true,
     "Yesterday": true,
     "Previous 7 Days": true,
     "Previous 30 Days": true
   });
+  
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = decodeURIComponent(location.pathname);
+  const isIndex = location.pathname === '/';
 
   const timeframes: TimeframeProps[] = [
-    {
-      title: "Favorites",
-      items: [
-        "AI Development Guide",
-        "Project Architecture",
-        "Best Practices"
-      ]
+    { 
+      title: "Favorites", 
+      items: favorites
     },
     { 
       title: "Yesterday", 
-      items: ["Using Tailwind CSS Guide"] 
+      items: ["Using Tailwind CSS Guide"].filter(item => 
+        item.toLowerCase().includes(searchQuery.toLowerCase())
+      ) 
     },
     { 
       title: "Previous 7 Days", 
@@ -50,7 +57,9 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
         "Viral Figma Board Ideas",
         "RAG Status in Software Dev",
         "Image Input ChatGPT API"
-      ] 
+      ].filter(item => 
+        item.toLowerCase().includes(searchQuery.toLowerCase())
+      ) 
     },
     {
       title: "Previous 30 Days",
@@ -60,7 +69,9 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
         "Reddit Posting Guidelines",
         "Revamping Social Features",
         "US AI Voting Logo"
-      ]
+      ].filter(item => 
+        item.toLowerCase().includes(searchQuery.toLowerCase())
+      )
     }
   ];
 
@@ -92,16 +103,28 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
     return currentPath === `/chat/${item}` || (currentPath === '/chat/new' && item === 'New Chat');
   };
 
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(favorites);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setFavorites(items);
+    toast.success("Favorites reordered successfully");
+  };
+
   return (
     <div className={cn(
       "fixed top-0 left-0 z-40 h-screen bg-chatgpt-sidebar transition-all duration-500 ease-in-out",
-      isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full"
+      "md:translate-x-0 md:w-64",
+      isOpen ? "w-full md:w-64 translate-x-0" : "w-0 -translate-x-full"
     )}>
       <nav className="flex h-full w-full flex-col px-3" aria-label="Chat history">
         <div className="flex justify-between flex h-[60px] items-center border-b border-white/10">
           <button 
             onClick={onToggle} 
-            className="h-10 rounded-lg px-2 text-white hover:bg-white/10 transition-all duration-300 hover:scale-105"
+            className="h-10 rounded-lg px-2 text-white hover:bg-white/10 transition-all duration-300 hover:scale-105 md:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -121,6 +144,13 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
         <div className="flex-col flex-1 transition-all duration-300 relative -mr-2 pr-2 overflow-y-auto">
           {isOpen && (
             <>
+              {isIndex && (
+                <div className="p-4 mb-4 bg-white/5 rounded-lg animate-fade-in">
+                  <h2 className="text-lg font-medium mb-2">Welcome!</h2>
+                  <p className="text-sm text-gray-400">Start a new chat or continue a previous conversation.</p>
+                </div>
+              )}
+
               <div className="p-2 mb-4 animate-fade-in">
                 <div className="flex items-center gap-2 mb-2">
                   <Key className="h-4 w-4" />
@@ -133,6 +163,19 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
                   onChange={handleApiKeyChange}
                   className="bg-[#2F2F2F] border-none focus:ring-2 focus:ring-white/20 transition-all duration-300 hover:bg-[#3F3F3F]"
                 />
+              </div>
+
+              <div className="p-2 mb-4 animate-fade-in">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search chats..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-[#2F2F2F] border-none focus:ring-2 focus:ring-white/20 transition-all duration-300 hover:bg-[#3F3F3F]"
+                  />
+                </div>
               </div>
 
               <div className="bg-token-sidebar-surface-primary pt-0 animate-fade-in">
@@ -173,24 +216,61 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
                         "mt-1 space-y-1 overflow-hidden transition-all duration-300",
                         expandedTimeframes[timeframe.title] ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                       )}>
-                        {timeframe.items.map((item) => (
-                          <button 
-                            key={item} 
-                            onClick={() => handleChatItemClick(item)}
-                            className={cn(
-                              "group flex w-full h-9 items-center gap-2.5 rounded-lg px-4 text-sm ml-2",
-                              "transition-all duration-300 hover:scale-105",
-                              "hover:bg-white/10 cursor-pointer",
-                              isCurrentChat(item) && "bg-white/20 hover:bg-white/25"
-                            )}
-                          >
-                            <MessageSquare className={cn(
-                              "h-3 w-3 text-gray-400 transition-transform duration-300",
-                              "group-hover:rotate-12"
-                            )} />
-                            <span className="truncate">{item}</span>
-                          </button>
-                        ))}
+                        {timeframe.title === "Favorites" ? (
+                          <DragDropContext onDragEnd={handleDragEnd}>
+                            <Droppable droppableId="favorites">
+                              {(provided) => (
+                                <div {...provided.droppableProps} ref={provided.innerRef}>
+                                  {timeframe.items.map((item, index) => (
+                                    <Draggable key={item} draggableId={item} index={index}>
+                                      {(provided) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          className={cn(
+                                            "group flex w-full h-9 items-center gap-2.5 rounded-lg px-4 text-sm ml-2",
+                                            "transition-all duration-300 hover:scale-105",
+                                            "hover:bg-white/10 cursor-pointer",
+                                            isCurrentChat(item) && "bg-white/20 hover:bg-white/25"
+                                          )}
+                                          onClick={() => handleChatItemClick(item)}
+                                        >
+                                          <GripVertical className="h-3 w-3 text-gray-400" />
+                                          <MessageSquare className={cn(
+                                            "h-3 w-3 text-gray-400 transition-transform duration-300",
+                                            "group-hover:rotate-12"
+                                          )} />
+                                          <span className="truncate">{item}</span>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </DragDropContext>
+                        ) : (
+                          timeframe.items.map((item) => (
+                            <button 
+                              key={item} 
+                              onClick={() => handleChatItemClick(item)}
+                              className={cn(
+                                "group flex w-full h-9 items-center gap-2.5 rounded-lg px-4 text-sm ml-2",
+                                "transition-all duration-300 hover:scale-105",
+                                "hover:bg-white/10 cursor-pointer",
+                                isCurrentChat(item) && "bg-white/20 hover:bg-white/25"
+                              )}
+                            >
+                              <MessageSquare className={cn(
+                                "h-3 w-3 text-gray-400 transition-transform duration-300",
+                                "group-hover:rotate-12"
+                              )} />
+                              <span className="truncate">{item}</span>
+                            </button>
+                          ))
+                        )}
                       </div>
                     </div>
                   ))}

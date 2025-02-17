@@ -56,15 +56,22 @@ const Chat = () => {
         <div className="absolute inset-0 flex flex-col">
           {messages.length === 0 ? (
             <div className="flex-1 flex flex-col justify-center items-center">
-              <h1 className="text-3xl font-semibold mb-8">How can I help you today?</h1>
-              <ActionButtons />
+              <h1 className="text-3xl font-semibold mb-8">
+                {id === 'new' ? 'How can I help you today?' : decodeURIComponent(id)}
+              </h1>
+              <div className="w-full max-w-3xl px-4">
+                <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+                <ActionButtons />
+              </div>
             </div>
           ) : (
-            <MessageList messages={messages} />
+            <>
+              <MessageList messages={messages} />
+              <div className="w-full max-w-3xl mx-auto px-4 py-2">
+                <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+              </div>
+            </>
           )}
-          <div className="w-full max-w-3xl mx-auto px-4 py-2">
-            <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
-          </div>
           <div className="text-xs text-center text-gray-500 py-2">
             ChatGPT can make mistakes. Check important info.
           </div>

@@ -1,3 +1,4 @@
+
 const MessageAvatar = ({ isAssistant }: { isAssistant: boolean }) => {
   if (isAssistant) {
     return (

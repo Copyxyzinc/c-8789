@@ -17,6 +17,7 @@ const Chat = () => {
   const { id } = useParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
@@ -51,7 +52,10 @@ const Chat = () => {
 
   return (
     <div className="flex h-full flex-col">
-      <ChatHeader />
+      <ChatHeader 
+        isSidebarOpen={isSidebarOpen} 
+        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+      />
       <div className="flex-1 relative">
         <div className="absolute inset-0 flex flex-col">
           {messages.length === 0 ? (

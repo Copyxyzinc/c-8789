@@ -1,55 +1,42 @@
 
 import { useState } from "react";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { Send } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
-  isLoading?: boolean;
+  isLoading: boolean;
+  placeholder?: string;
 }
 
-const ChatInput = ({ onSend, isLoading = false }: ChatInputProps) => {
+const ChatInput = ({ onSend, isLoading, placeholder = "Type a message..." }: ChatInputProps) => {
   const [message, setMessage] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (message.trim() && !isLoading) {
       onSend(message);
       setMessage("");
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   return (
-    <div className="relative flex w-full flex-col items-center">
-      <div className="relative w-full">
-        <textarea
-          rows={1}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Message Claude"
-          className="w-full resize-none rounded-full bg-[#2F2F2F] px-4 py-4 pr-12 focus:outline-none"
-          style={{ maxHeight: "200px" }}
-          disabled={isLoading}
-        />
-        <button 
-          onClick={handleSubmit}
-          disabled={isLoading || !message.trim()}
-          className="absolute right-3 top-[50%] -translate-y-[50%] p-1.5 bg-white rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 text-black animate-spin" />
-          ) : (
-            <ArrowUp className="h-4 w-4 text-black" />
-          )}
-        </button>
-      </div>
-    </div>
+    <form onSubmit={handleSubmit} className="relative w-full">
+      <input
+        type="text"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder={placeholder}
+        disabled={isLoading}
+        className="w-full rounded-lg bg-[#40414f] px-4 py-3 pr-12 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/20"
+      />
+      <button
+        type="submit"
+        disabled={!message.trim() || isLoading}
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+      >
+        <Send className="h-5 w-5" />
+      </button>
+    </form>
   );
 };
 

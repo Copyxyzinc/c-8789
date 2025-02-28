@@ -19,12 +19,20 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
-      toast.error("Please enter a message");
+      toast.error("Por favor digite uma mensagem");
       return;
     }
 
-    // Navigate to a new chat when sending the first message
+    if (!apiKey) {
+      toast.error("Por favor insira sua chave de API do OpenAI na barra lateral");
+      setIsSidebarOpen(true);
+      return;
+    }
+
+    // Cria um novo ID para o chat
     const chatId = `chat-${Date.now()}`;
+    
+    // Navega para o novo chat com a mensagem inicial
     navigate(`/chat/${chatId}`, { 
       state: { initialMessage: content } 
     });
@@ -46,12 +54,12 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
           <div className="w-full max-w-3xl space-y-8">
             <div className="text-center">
               <h1 className="mb-8 text-4xl font-semibold">
-                How can I help you today?
+                Como posso ajudar você hoje?
               </h1>
               <ChatInput 
                 onSend={handleSendMessage} 
                 isLoading={isLoading}
-                placeholder="Send a message..."
+                placeholder="Digite uma mensagem..."
               />
             </div>
             <ActionButtons />

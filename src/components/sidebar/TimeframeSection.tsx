@@ -6,11 +6,12 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface TimeframeSectionProps {
   title: string;
-  items: string[];
+  items: {id: string, title: string}[];
   isExpanded: boolean;
   onToggle: () => void;
-  onItemClick: (item: string) => void;
-  isCurrentChat: (item: string) => boolean;
+  onItemClick: (item: {id: string, title: string}) => void;
+  onItemDelete?: (id: string) => void;
+  isCurrentChat: (item: {id: string, title: string}) => boolean;
   isDraggable?: boolean;
   onDragEnd?: (result: any) => void;
 }
@@ -21,6 +22,7 @@ export const TimeframeSection = ({
   isExpanded,
   onToggle,
   onItemClick,
+  onItemDelete,
   isCurrentChat,
   isDraggable,
   onDragEnd
@@ -52,12 +54,13 @@ export const TimeframeSection = ({
               {(provided) => (
                 <div {...provided.droppableProps} ref={provided.innerRef}>
                   {items.map((item, index) => (
-                    <Draggable key={item} draggableId={item} index={index}>
+                    <Draggable key={item.id} draggableId={item.id} index={index}>
                       {(provided) => (
                         <ChatItem
                           item={item}
                           isActive={isCurrentChat(item)}
                           onClick={() => onItemClick(item)}
+                          onDelete={onItemDelete ? () => onItemDelete(item.id) : undefined}
                           draggableProvided={provided}
                           showDragHandle={true}
                         />
@@ -72,10 +75,11 @@ export const TimeframeSection = ({
         ) : (
           items.map((item) => (
             <ChatItem
-              key={item}
+              key={item.id}
               item={item}
               isActive={isCurrentChat(item)}
               onClick={() => onItemClick(item)}
+              onDelete={onItemDelete ? () => onItemDelete(item.id) : undefined}
             />
           ))
         )}

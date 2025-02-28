@@ -1,12 +1,13 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { SidebarHeader } from './sidebar/SidebarHeader';
 import { SearchBar } from './sidebar/SearchBar';
 import { ApiKeyInput } from './sidebar/ApiKeyInput';
 import { TimeframeSection } from './sidebar/TimeframeSection';
 import { WelcomeMessage } from './sidebar/WelcomeMessage';
 import { cn } from '@/lib/utils';
+import { getChatsByTimeframe, deleteChat } from '@/services/chatHistory';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,22 +18,63 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange, apiKey }: SidebarProps) => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentChat, setCurrentChat] = useState<string | null>(null);
-  const [sections, setSections] = useState({
-    today: { isExpanded: true, chats: ['Recent Chat 1', 'Recent Chat 2'] },
-    yesterday: { isExpanded: false, chats: ['Yesterday Chat 1'] },
-    previous: { isExpanded: false, chats: ['Last Week Chat 1', 'Old Chat 1'] },
+  const [chatGroups, setChatGroups] = useState({
+    today: { isExpanded: true, chats: [] as {id: string, title: string}[] },
+    yesterday: { isExpanded: false, chats: [] as {id: string, title: string}[] },
+    previous: { isExpanded: false, chats: [] as {id: string, title: string}[] },
   });
 
+  // Carrega o histórico de chat
+  const loadChatHistory = () => {
+    const chatsByTimeframe = getChatsByTimeframe();
+    
+    setChatGroups({
+      today: { 
+        isExpanded: chatGroups.today.isExpanded, 
+        chats: chatsByTimeframe.today.map(chat => ({ id: chat.id, title: chat.title }))
+      },
+      yesterday: { 
+        isExpanded: chatGroups.yesterday.isExpanded, 
+        chats: chatsByTimeframe.yesterday.map(chat => ({ id: chat.id, title: chat.title }))
+      },
+      previous: { 
+        isExpanded: chatGroups.previous.isExpanded, 
+        chats: chatsByTimeframe.previous.map(chat => ({ id: chat.id, title: chat.title }))
+      },
+    });
+  };
+
+  // Carrega o histórico quando o componente monta
+  useEffect(() => {
+    loadChatHistory();
+  }, []);
+
+  // Filtra os chats baseado na busca
+  const getFilteredChats = (chats: {id: string, title: string}[]) => {
+    if (!searchQuery) return chats;
+    return chats.filter(chat => 
+      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
   const handleNewChat = () => {
-    setCurrentChat('New Chat');
     navigate('/chat/new');
   };
 
-  const handleChatClick = (chat: string) => {
-    setCurrentChat(chat);
-    navigate(`/chat/${encodeURIComponent(chat)}`);
+  const handleChatClick = (chatInfo: {id: string, title: string}) => {
+    navigate(`/chat/${encodeURIComponent(chatInfo.id)}`);
+  };
+
+  const handleChatDelete = (chatId: string) => {
+    const success = deleteChat(chatId);
+    if (success) {
+      loadChatHistory();
+      if (id === chatId) {
+        navigate('/chat/new');
+      }
+    }
   };
 
   return (
@@ -46,7 +88,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, apiKey }: SidebarProps) => 
         <SidebarHeader 
           onToggle={onToggle}
           onNewChat={handleNewChat}
-          isCurrentChat={(item) => item === currentChat}
+          isCurrentChat={false}
         />
         
         <div className="flex-1 overflow-y-auto">
@@ -60,23 +102,32 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, apiKey }: SidebarProps) => 
             onApiKeyChange={onApiKeyChange}
           />
 
-          <WelcomeMessage />
+          {Object.values(chatGroups).every(group => group.chats.length === 0) && (
+            <WelcomeMessage />
+          )}
 
           <div className="px-2 space-y-2">
-            {Object.entries(sections).map(([timeframe, { isExpanded, chats }]) => (
-              <TimeframeSection
-                key={timeframe}
-                title={timeframe}
-                items={chats}
-                isExpanded={isExpanded}
-                onToggle={() => setSections(prev => ({
-                  ...prev,
-                  [timeframe]: { ...prev[timeframe as keyof typeof sections], isExpanded: !isExpanded }
-                }))}
-                onItemClick={handleChatClick}
-                isCurrentChat={(item) => item === currentChat}
-              />
-            ))}
+            {Object.entries(chatGroups).map(([timeframe, { isExpanded, chats }]) => {
+              const filteredChats = getFilteredChats(chats);
+              
+              if (filteredChats.length === 0) return null;
+              
+              return (
+                <TimeframeSection
+                  key={timeframe}
+                  title={timeframe}
+                  items={filteredChats}
+                  isExpanded={isExpanded}
+                  onToggle={() => setChatGroups(prev => ({
+                    ...prev,
+                    [timeframe]: { ...prev[timeframe as keyof typeof chatGroups], isExpanded: !isExpanded }
+                  }))}
+                  onItemClick={handleChatClick}
+                  onItemDelete={handleChatDelete}
+                  isCurrentChat={(item) => item.id === id}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

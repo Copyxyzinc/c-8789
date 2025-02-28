@@ -12,12 +12,12 @@ interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onApiKeyChange: (apiKey: string) => void;
+  apiKey: string;
 }
 
-const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
+const Sidebar = ({ isOpen, onToggle, onApiKeyChange, apiKey }: SidebarProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [apiKey, setApiKey] = useState('');
   const [currentChat, setCurrentChat] = useState<string | null>(null);
   const [sections, setSections] = useState({
     today: { isExpanded: true, chats: ['Recent Chat 1', 'Recent Chat 2'] },
@@ -33,11 +33,6 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
   const handleChatClick = (chat: string) => {
     setCurrentChat(chat);
     navigate(`/chat/${encodeURIComponent(chat)}`);
-  };
-
-  const handleApiKeyChange = (newApiKey: string) => {
-    setApiKey(newApiKey);
-    onApiKeyChange(newApiKey);
   };
 
   return (
@@ -62,7 +57,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
           
           <ApiKeyInput 
             apiKey={apiKey}
-            onApiKeyChange={handleApiKeyChange}
+            onApiKeyChange={onApiKeyChange}
           />
 
           <WelcomeMessage />

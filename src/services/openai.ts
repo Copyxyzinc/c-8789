@@ -1,50 +1,38 @@
 
-import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+export const sendMessageToOpenAI = async (messages: any[], apiKey: string): Promise<string> => {
+  if (!apiKey) {
+    throw new Error("OpenAI API key is required");
+  }
 
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
-
-export const sendMessageToOpenAI = async (messages: { role: 'user' | 'assistant'; content: string }[]) => {
   try {
-    // Get the OpenAI API key from Supabase
-    const { data: secretsData } = await supabase
-      .from('chat_messages')
-      .select('content')
-      .eq('role', 'system')
-      .single();
-
-    const apiKey = secretsData?.content;
-
-    if (!apiKey) {
-      console.error("Error: OpenAI API key not found");
-      throw new Error("Failed to get OpenAI API key");
-    }
-
-    const response = await fetch(OPENAI_API_URL, {
-      method: "POST",
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4",
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant.' },
+          ...messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        ],
+        temperature: 0.7
+      })
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("OpenAI API error:", errorData);
-      throw new Error(errorData.error?.message || "Failed to get response from OpenAI");
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to get response from OpenAI');
     }
 
-    const responseData = await response.json();
-    return responseData.choices[0].message.content;
+    const data = await response.json();
+    return data.choices[0].message.content;
   } catch (error: any) {
-    console.error("Error calling OpenAI:", error);
-    toast.error(error.message || "Failed to get response from ChatGPT");
-    throw error;
+    console.error('Error in OpenAI API call:', error);
+    throw new Error(error.message || 'Failed to communicate with OpenAI');
   }
 };

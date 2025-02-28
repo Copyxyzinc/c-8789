@@ -77,6 +77,11 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, apiKey }: SidebarProps) => 
     }
   };
 
+  // Função para verificar se um item é o chat atual
+  const isCurrentChat = (item: string) => {
+    return item === 'New Chat' && id === 'new';
+  };
+
   return (
     <aside
       className={cn(
@@ -88,7 +93,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, apiKey }: SidebarProps) => 
         <SidebarHeader 
           onToggle={onToggle}
           onNewChat={handleNewChat}
-          isCurrentChat={false}
+          isCurrentChat={isCurrentChat}
         />
         
         <div className="flex-1 overflow-y-auto">

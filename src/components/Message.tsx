@@ -5,9 +5,10 @@ import MessageActions from './MessageActions';
 type MessageProps = {
   role: 'user' | 'assistant';
   content: string;
+  onRegenerate?: () => void;
 };
 
-const Message = ({ role, content }: MessageProps) => {
+const Message = ({ role, content, onRegenerate }: MessageProps) => {
   return (
     <div className="py-6">
       <div className={`flex gap-4 ${role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -16,7 +17,7 @@ const Message = ({ role, content }: MessageProps) => {
           <div className={`${role === 'user' ? 'bg-gray-700/50 rounded-[20px] px-4 py-2 inline-block' : ''}`}>
             {content}
           </div>
-          {role === 'assistant' && <MessageActions />}
+          {role === 'assistant' && <MessageActions content={content} onRegenerate={onRegenerate} />}
         </div>
       </div>
     </div>

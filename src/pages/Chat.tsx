@@ -35,12 +35,12 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
-      toast.error("Please enter a message");
+      toast.error("Por favor digite uma mensagem");
       return;
     }
 
     if (!apiKey) {
-      toast.error("Please enter your OpenAI API key in the sidebar");
+      toast.error("Por favor insira sua chave de API do OpenAI na barra lateral");
       setIsSidebarOpen(true);
       return;
     }
@@ -70,6 +70,46 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
     }
   };
 
+  const handleRegenerateResponse = async (messageIndex: number) => {
+    if (!apiKey) {
+      toast.error("Por favor insira sua chave de API do OpenAI na barra lateral");
+      setIsSidebarOpen(true);
+      return;
+    }
+
+    // Garante que o índice é um assistente e tem uma mensagem do usuário antes
+    if (messageIndex < 1 || messages[messageIndex].role !== 'assistant') {
+      return;
+    }
+
+    const userMessage = messages[messageIndex - 1];
+    if (userMessage.role !== 'user') {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Pega todas as mensagens até o userMessage 
+      const messageContext = messages.slice(0, messageIndex);
+      
+      const assistantResponse = await sendMessageToOpenAI(messageContext, apiKey);
+
+      const updatedMessages = [...messages];
+      updatedMessages[messageIndex] = {
+        role: 'assistant',
+        content: assistantResponse
+      };
+
+      setMessages(updatedMessages);
+      toast.success("Resposta regenerada com sucesso");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-[#343541]">
       <Sidebar 
@@ -90,7 +130,7 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
             {messages.length === 0 ? (
               <div className="flex-1 flex flex-col justify-center items-center">
                 <h1 className="text-3xl font-semibold mb-8">
-                  {id === 'new' ? 'How can I help you today?' : decodeURIComponent(id || '')}
+                  {id === 'new' ? 'Como posso ajudar você hoje?' : decodeURIComponent(id || '')}
                 </h1>
                 <div className="w-full max-w-3xl px-4">
                   <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
@@ -99,14 +139,17 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
               </div>
             ) : (
               <>
-                <MessageList messages={messages} />
+                <MessageList 
+                  messages={messages} 
+                  onRegenerateResponse={handleRegenerateResponse}
+                />
                 <div className="w-full max-w-3xl mx-auto px-4 py-2">
                   <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
                 </div>
               </>
             )}
             <div className="text-xs text-center text-gray-500 py-2">
-              ChatGPT can make mistakes. Check important info.
+              O ChatGPT pode cometer erros. Verifique informações importantes.
             </div>
           </div>
         </div>

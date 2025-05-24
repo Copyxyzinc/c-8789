@@ -1,14 +1,16 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { Settings } from 'lucide-react';
 import ChatHeader from '@/components/ChatHeader';
-import ChatInput from '@/components/ChatInput';
+import EnhancedChatInput from '@/components/EnhancedChatInput';
 import MessageList from '@/components/MessageList';
 import ActionButtons from '@/components/ActionButtons';
 import Sidebar from '@/components/Sidebar';
+import SettingsPanel from '@/components/SettingsPanel';
 import { sendMessageToOpenAI } from '@/services/openai';
 import { saveChat, getChatHistory } from '@/services/chatHistory';
+import { exportChats, importChats, exportChatAsMarkdown } from '@/services/chatExport';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -27,6 +29,7 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Carrega um chat existente do histórico
   useEffect(() => {
@@ -145,6 +148,27 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
     }
   };
 
+  const handleActionClick = (template: string) => {
+    // For action buttons in chat, we can directly send the template or show it in input
+    handleSendMessage(template);
+  };
+
+  const handleExportChats = () => {
+    exportChats();
+  };
+
+  const handleImportChats = (data: any) => {
+    if (importChats(data)) {
+      window.location.reload();
+    }
+  };
+
+  const handleExportCurrentChat = () => {
+    if (id && id !== 'new') {
+      exportChatAsMarkdown(id);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-[#343541]">
       <Sidebar 
@@ -164,12 +188,21 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
           <div className="absolute inset-0 flex flex-col pt-[60px]">
             {messages.length === 0 ? (
               <div className="flex-1 flex flex-col justify-center items-center">
-                <h1 className="text-3xl font-semibold mb-8">
-                  {id === 'new' ? 'Como posso ajudar você hoje?' : 'Carregando conversa...'}
-                </h1>
+                <div className="flex items-center gap-4 mb-8">
+                  <h1 className="text-3xl font-semibold">
+                    {id === 'new' ? 'Como posso ajudar você hoje?' : 'Carregando conversa...'}
+                  </h1>
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    title="Configurações"
+                  >
+                    <Settings className="h-5 w-5" />
+                  </button>
+                </div>
                 <div className="w-full max-w-3xl px-4">
-                  <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
-                  <ActionButtons />
+                  <EnhancedChatInput onSend={handleSendMessage} isLoading={isLoading} />
+                  <ActionButtons onActionClick={handleActionClick} />
                 </div>
               </div>
             ) : (
@@ -179,7 +212,7 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
                   onRegenerateResponse={handleRegenerateResponse}
                 />
                 <div className="w-full max-w-3xl mx-auto px-4 py-2">
-                  <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+                  <EnhancedChatInput onSend={handleSendMessage} isLoading={isLoading} />
                 </div>
               </>
             )}
@@ -189,6 +222,13 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
           </div>
         </div>
       </main>
+
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onExportChats={handleExportChats}
+        onImportChats={handleImportChats}
+      />
     </div>
   );
 };

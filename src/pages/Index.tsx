@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import EnhancedChatInput from '@/components/EnhancedChatInput';
 import ActionButtons from '@/components/ActionButtons';
 import SettingsPanel from '@/components/SettingsPanel';
 import { exportChats, importChats } from '@/services/chatExport';
+import { useChatSettings } from '@/hooks/useChatSettings';
 
 interface IndexProps {
   apiKey: string;
@@ -21,6 +21,7 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const { settings } = useChatSettings();
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
@@ -86,6 +87,12 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
                 </button>
               </div>
               
+              {settings.ragEnabled && (
+                <div className="text-sm text-green-400 mb-4">
+                  RAG habilitado - Usando conhecimento de documentos
+                </div>
+              )}
+              
               <EnhancedChatInput 
                 onSend={handleSendMessage} 
                 isLoading={isLoading}
@@ -103,6 +110,7 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
         onClose={() => setIsSettingsOpen(false)}
         onExportChats={handleExportChats}
         onImportChats={handleImportChats}
+        apiKey={apiKey}
       />
     </div>
   );

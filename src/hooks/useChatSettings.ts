@@ -6,6 +6,10 @@ interface ChatSettings {
   maxTokens: number;
   model: string;
   isDarkMode: boolean;
+  ragEnabled: boolean;
+  ragTopK: number;
+  ragMinSimilarity: number;
+  ragMaxContext: number;
 }
 
 const defaultSettings: ChatSettings = {
@@ -13,6 +17,10 @@ const defaultSettings: ChatSettings = {
   maxTokens: 2048,
   model: 'gpt-3.5-turbo',
   isDarkMode: true,
+  ragEnabled: false,
+  ragTopK: 5,
+  ragMinSimilarity: 0.5,
+  ragMaxContext: 3000,
 };
 
 export const useChatSettings = () => {
@@ -22,7 +30,8 @@ export const useChatSettings = () => {
     const savedSettings = localStorage.getItem('chat_settings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings);
+        setSettings({ ...defaultSettings, ...parsed });
       } catch (error) {
         console.error('Failed to parse chat settings:', error);
       }

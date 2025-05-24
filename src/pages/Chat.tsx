@@ -11,6 +11,8 @@ import SettingsPanel from '@/components/SettingsPanel';
 import { sendMessageToOpenAI } from '@/services/openai';
 import { saveChat, getChatHistory } from '@/services/chatHistory';
 import { exportChats, importChats, exportChatAsMarkdown } from '@/services/chatExport';
+import { retrieveContext, enhancePromptWithContext, formatContextSources } from '@/services/ragService';
+import { useChatSettings } from '@/hooks/useChatSettings';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -30,6 +32,7 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { settings } = useChatSettings();
 
   // Carrega um chat existente do histórico
   useEffect(() => {
@@ -86,6 +89,29 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
     setIsLoading(true);
 
     try {
+      let enhancedContent = content;
+      let contextSources: string[] = [];
+
+      // Use RAG if enabled and API key is available
+      if (settings.ragEnabled && apiKey) {
+        try {
+          const ragContext = await retrieveContext(content, apiKey, {
+            topK: settings.ragTopK,
+            minSimilarity: settings.ragMinSimilarity,
+            maxContextLength: settings.ragMaxContext
+          });
+
+          if (ragContext.contextText) {
+            enhancedContent = enhancePromptWithContext(content, ragContext);
+            contextSources = ragContext.sources;
+            console.log('RAG context retrieved:', ragContext.sources);
+          }
+        } catch (ragError) {
+          console.error('RAG error:', ragError);
+          // Continue without RAG context if it fails
+        }
+      }
+
       const newMessages = [
         ...messages,
         { role: 'user', content } as const
@@ -93,11 +119,19 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
       
       setMessages(newMessages);
 
-      const assistantResponse = await sendMessageToOpenAI(newMessages, apiKey);
+      const assistantResponse = await sendMessageToOpenAI([
+        ...messages,
+        { role: 'user', content: enhancedContent }
+      ], apiKey);
+
+      // Add source information if context was used
+      const finalResponse = contextSources.length > 0 
+        ? assistantResponse + formatContextSources(contextSources)
+        : assistantResponse;
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: assistantResponse
+        content: finalResponse
       };
 
       setMessages([...newMessages, assistantMessage]);
@@ -200,6 +234,11 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
                     <Settings className="h-5 w-5" />
                   </button>
                 </div>
+                {settings.ragEnabled && (
+                  <div className="text-sm text-green-400 mb-4">
+                    RAG habilitado - Usando conhecimento de documentos
+                  </div>
+                )}
                 <div className="w-full max-w-3xl px-4">
                   <EnhancedChatInput onSend={handleSendMessage} isLoading={isLoading} />
                   <ActionButtons onActionClick={handleActionClick} />
@@ -228,6 +267,7 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
         onClose={() => setIsSettingsOpen(false)}
         onExportChats={handleExportChats}
         onImportChats={handleImportChats}
+        apiKey={apiKey}
       />
     </div>
   );

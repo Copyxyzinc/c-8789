@@ -1,6 +1,8 @@
 
 import { DocumentChunk, generateBatchEmbeddings } from './embeddings';
 
+export type { DocumentChunk };
+
 export interface ProcessedDocument {
   id: string;
   title: string;

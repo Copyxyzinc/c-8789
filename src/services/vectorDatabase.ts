@@ -54,7 +54,10 @@ class VectorDatabase {
       await chunksStore.put(chunk);
     }
 
-    await transaction.complete;
+    return new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
   }
 
   async getAllDocuments(): Promise<ProcessedDocument[]> {
@@ -86,7 +89,10 @@ class VectorDatabase {
       await chunksStore.delete(chunk.id);
     }
 
-    await transaction.complete;
+    return new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
   }
 
   private async getChunksByDocument(documentId: string): Promise<DocumentChunk[]> {

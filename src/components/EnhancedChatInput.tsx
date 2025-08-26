@@ -1,6 +1,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Send, Lightbulb } from "lucide-react";
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { useParams } from 'react-router-dom';
 
 interface EnhancedChatInputProps {
   onSend: (message: string) => void;
@@ -23,14 +25,31 @@ const EnhancedChatInput = ({
   placeholder = "Digite uma mensagem...",
   initialValue = ""
 }: EnhancedChatInputProps) => {
+  const { id } = useParams();
   const [message, setMessage] = useState(initialValue);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    setMessage(initialValue);
-  }, [initialValue]);
+  // Auto-save draft
+  const { clearDraft, getDraft } = useAutoSave({
+    data: message,
+    key: id || 'new',
+    delay: 500
+  });
 
+  // Load draft on mount and update message when initialValue changes
+  useEffect(() => {
+    if (initialValue) {
+      setMessage(initialValue);
+    } else if (!message) {
+      const draft = getDraft();
+      if (draft) {
+        setMessage(draft);
+      }
+    }
+  }, [initialValue, getDraft]);
+
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -42,6 +61,7 @@ const EnhancedChatInput = ({
     e.preventDefault();
     if (message.trim() && !isLoading) {
       onSend(message);
+      clearDraft(); // Clear saved draft after sending
       setMessage("");
       setShowSuggestions(false);
     }
@@ -49,6 +69,9 @@ const EnhancedChatInput = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -69,7 +92,7 @@ const EnhancedChatInput = ({
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setShowSuggestions(true)}
-          placeholder={placeholder}
+          placeholder={`${placeholder} (Ctrl+Enter para enviar)`}
           disabled={isLoading}
           rows={1}
           className="w-full rounded-lg bg-[#40414f] px-4 py-3 pr-12 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/20 resize-none min-h-[48px] max-h-32"

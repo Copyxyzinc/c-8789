@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import { Settings } from 'lucide-react';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import EnhancedChatInput from '@/components/EnhancedChatInput';
@@ -22,6 +23,12 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const { settings } = useChatSettings();
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onToggleSidebar: () => setIsSidebarOpen(!isSidebarOpen),
+    onOpenSettings: () => setIsSettingsOpen(true)
+  });
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {

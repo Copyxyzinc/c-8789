@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from "sonner";
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import ChatHeader from '@/components/ChatHeader';
 import ChatContent from '@/components/ChatContent';
 import Sidebar from '@/components/Sidebar';
@@ -23,6 +24,12 @@ const Chat = ({ apiKey, onApiKeyChange }: ChatProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { messages, isLoading, handleSendMessage, handleRegenerateResponse } = useChatManager(apiKey);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onToggleSidebar: () => setIsSidebarOpen(!isSidebarOpen),
+    onOpenSettings: () => setIsSettingsOpen(true)
+  });
 
   const handleSendMessageWithSidebarCheck = async (content: string) => {
     if (!apiKey) {

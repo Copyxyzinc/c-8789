@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import { Settings } from 'lucide-react';
@@ -6,8 +6,11 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import EnhancedChatInput from '@/components/EnhancedChatInput';
+import VoiceInput from '@/components/VoiceInput';
 import ActionButtons from '@/components/ActionButtons';
 import SettingsPanel from '@/components/SettingsPanel';
+import ThemeToggle from '@/components/ThemeToggle';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { exportChats, importChats } from '@/services/chatExport';
 import { useChatSettings } from '@/hooks/useChatSettings';
 
@@ -22,7 +25,14 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
   const { settings } = useChatSettings();
+
+  // Load ElevenLabs API key from localStorage
+  useEffect(() => {
+    const savedKey = localStorage.getItem('elevenlabs_api_key') || '';
+    setElevenLabsApiKey(savedKey);
+  }, []);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -64,62 +74,74 @@ const Index = ({ apiKey, onApiKeyChange }: IndexProps) => {
   };
 
   return (
-    <div className="flex h-screen bg-[#343541]">
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        onApiKeyChange={onApiKeyChange}
-        apiKey={apiKey}
-      />
-      
-      <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        <ChatHeader 
-          isSidebarOpen={isSidebarOpen} 
-          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+    <ErrorBoundary>
+      <div className="flex h-screen bg-[#343541]">
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          onApiKeyChange={onApiKeyChange}
+          apiKey={apiKey}
         />
         
-        <div className="flex h-[calc(100vh-60px)] flex-col items-center justify-center px-4 pt-[60px]">
-          <div className="w-full max-w-3xl space-y-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-4 mb-8">
-                <h1 className="text-4xl font-semibold">
-                  Como posso ajudar você hoje?
-                </h1>
-                <button
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                  title="Configurações"
-                >
-                  <Settings className="h-6 w-6" />
-                </button>
-              </div>
-              
-              {settings.ragEnabled && (
-                <div className="text-sm text-green-400 mb-4">
-                  RAG habilitado - Usando conhecimento de documentos
+        <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+          <ChatHeader 
+            isSidebarOpen={isSidebarOpen} 
+            onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+          />
+          
+          <div className="flex h-[calc(100vh-60px)] flex-col items-center justify-center px-4 pt-[60px]">
+            <div className="w-full max-w-3xl space-y-8">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-4 mb-8">
+                  <h1 className="text-4xl font-semibold">
+                    Como posso ajudar você hoje?
+                  </h1>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                      title="Configurações"
+                    >
+                      <Settings className="h-6 w-6" />
+                    </button>
+                    <ThemeToggle />
+                  </div>
                 </div>
-              )}
-              
-              <EnhancedChatInput 
-                onSend={handleSendMessage} 
-                isLoading={isLoading}
-                placeholder="Digite uma mensagem..."
-                initialValue={inputValue}
-              />
+                
+                {settings.ragEnabled && (
+                  <div className="text-sm text-green-400 mb-4">
+                    RAG habilitado - Usando conhecimento de documentos
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2 mb-4">
+                  <EnhancedChatInput 
+                    onSend={handleSendMessage} 
+                    isLoading={isLoading}
+                    placeholder="Digite uma mensagem..."
+                    initialValue={inputValue}
+                  />
+                  <VoiceInput 
+                    onTranscript={(text) => setInputValue(text)} 
+                    isEnabled={true}
+                    elevenLabsApiKey={elevenLabsApiKey}
+                  />
+                </div>
+              </div>
+              <ActionButtons onActionClick={handleActionClick} />
             </div>
-            <ActionButtons onActionClick={handleActionClick} />
           </div>
-        </div>
-      </main>
+        </main>
 
-      <SettingsPanel
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onExportChats={handleExportChats}
-        onImportChats={handleImportChats}
-        apiKey={apiKey}
-      />
-    </div>
+        <SettingsPanel
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onExportChats={handleExportChats}
+          onImportChats={handleImportChats}
+          apiKey={apiKey}
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
 
